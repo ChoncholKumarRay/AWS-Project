@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../apps/api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum InstanceStatus {
+  RUNNING
+  STOPPED
+}
+
+enum SecurityRuleDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SecurityProtocol {
+  TCP
+  UDP
+  ICMP
+  ALL
+}
+
+model CloudProject {
+  id             String                 @id @default(cuid())
+  name           String
+  description    String?
+  status         InstanceStatus
+  instanceName   String                 @unique
+  ipAddress      String?
+  instanceType   String
+  vcpu           Int
+  memoryMb       Int
+  publicKey      String?
+  keyFingerprint String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  securityGroups ProjectSecurityGroup[]
+
+  @@index([status])
+  @@index([instanceName])
+}
+
+model SecurityGroup {
+  id          String                 @id @default(cuid())
+  name        String                 @unique
+  description String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  rules       SecurityRule[]
+  projects    ProjectSecurityGroup[]
+}
+
+model SecurityRule {
+  id          String                @id @default(cuid())
+  groupId     String
+  direction   SecurityRuleDirection @default(INBOUND)
+  protocol    SecurityProtocol
+  fromPort    Int?
+  toPort      Int?
+  sourceIp    String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  group       SecurityGroup         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+model ProjectSecurityGroup {
+  projectId       String
+  securityGroupId String
+  attachedAt      DateTime      @default(now())
+  project         CloudProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  securityGroup   SecurityGroup @relation(fields: [securityGroupId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, securityGroupId])
+  @@index([securityGroupId])
+}
