@@ -13,10 +13,10 @@ import type {
   SecurityGroupDto,
   SecurityGroupListResponse,
   TerminateProjectResponse,
-  UpdateSecurityGroupRequest
+  UpdateSecurityGroupRequest,
 } from "@local-cloud/shared";
 
-const API_PORT = "5000";
+const API_PORT = import.meta.env.VITE_API_PORT ?? "5000";
 const LAUNCH_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTION_TIMEOUT_MS = 2.5 * 60 * 1000;
 
@@ -28,17 +28,18 @@ export function getApiBaseUrl() {
 export function getTerminalWebSocketUrl(projectId: string) {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.hostname}:${API_PORT}/api/ws/terminal/${encodeURIComponent(
-    projectId
+    projectId,
   )}`;
 }
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: ACTION_TIMEOUT_MS
+  timeout: ACTION_TIMEOUT_MS,
 });
 
 export async function fetchInstanceTypes() {
-  const response = await api.get<InstanceTypeCatalogResponse>("/instance-types");
+  const response =
+    await api.get<InstanceTypeCatalogResponse>("/instance-types");
   return response.data;
 }
 
@@ -49,7 +50,7 @@ export async function fetchProjects() {
 
 export async function launchProject(input: LaunchProjectRequest) {
   const response = await api.post<LaunchProjectResponse>("/projects", input, {
-    timeout: LAUNCH_TIMEOUT_MS
+    timeout: LAUNCH_TIMEOUT_MS,
   });
   return response.data;
 }
@@ -66,7 +67,7 @@ export async function terminateProject(id: string) {
   const response = await api.post<TerminateProjectResponse>(
     `/projects/${id}/terminate`,
     undefined,
-    { timeout: ACTION_TIMEOUT_MS }
+    { timeout: ACTION_TIMEOUT_MS },
   );
   return response.data;
 }
@@ -82,7 +83,9 @@ export async function fetchSecurityGroups() {
 }
 
 export async function fetchMyIp() {
-  const response = await api.get<{ ipAddress: string }>("/security-groups/whoami");
+  const response = await api.get<{ ipAddress: string }>(
+    "/security-groups/whoami",
+  );
   return response.data.ipAddress;
 }
 
@@ -93,9 +96,12 @@ export async function createSecurityGroup(input: CreateSecurityGroupRequest) {
 
 export async function updateSecurityGroup(
   id: string,
-  input: UpdateSecurityGroupRequest
+  input: UpdateSecurityGroupRequest,
 ) {
-  const response = await api.put<SecurityGroupDto>(`/security-groups/${id}`, input);
+  const response = await api.put<SecurityGroupDto>(
+    `/security-groups/${id}`,
+    input,
+  );
   return response.data;
 }
 
@@ -105,36 +111,36 @@ export async function deleteSecurityGroup(id: string) {
 
 export async function addSecurityRule(
   groupId: string,
-  input: CreateSecurityRuleRequest
+  input: CreateSecurityRuleRequest,
 ) {
   const response = await api.post<SecurityGroupDto>(
     `/security-groups/${groupId}/rules`,
-    input
+    input,
   );
   return response.data;
 }
 
 export async function deleteSecurityRule(groupId: string, ruleId: string) {
   const response = await api.delete<SecurityGroupDto>(
-    `/security-groups/${groupId}/rules/${ruleId}`
+    `/security-groups/${groupId}/rules/${ruleId}`,
   );
   return response.data;
 }
 
 export async function fetchProjectSecurityGroups(projectId: string) {
   const response = await api.get<SecurityGroupListResponse>(
-    `/projects/${projectId}/security-groups`
+    `/projects/${projectId}/security-groups`,
   );
   return response.data.securityGroups;
 }
 
 export async function replaceProjectSecurityGroups(
   projectId: string,
-  input: ReplaceProjectSecurityGroupsRequest
+  input: ReplaceProjectSecurityGroupsRequest,
 ) {
   const response = await api.put<SecurityGroupListResponse>(
     `/projects/${projectId}/security-groups`,
-    input
+    input,
   );
   return response.data.securityGroups;
 }
@@ -158,7 +164,7 @@ export function getApiErrorMessage(error: unknown) {
       return [
         "Blocked by Security Group",
         details?.reason ?? responseBody?.reason,
-        sourceIp ? `Source IP: ${sourceIp}` : undefined
+        sourceIp ? `Source IP: ${sourceIp}` : undefined,
       ]
         .filter(Boolean)
         .join(". ");
@@ -186,7 +192,7 @@ export function getApiErrorMessage(error: unknown) {
 
 async function projectAction(path: string): Promise<CloudProjectDto> {
   const response = await api.post<ProjectActionResponse>(path, undefined, {
-    timeout: ACTION_TIMEOUT_MS
+    timeout: ACTION_TIMEOUT_MS,
   });
   return response.data.project;
 }
